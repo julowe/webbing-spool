@@ -1,8 +1,8 @@
 // webbing spool
 //justin lowe 20201002
 
-cylinderFacets = 180; //cylinder facets - for export
-//cylinderFacets = 36; //cylinder facets - decreased for quicker rendering
+//cylinderFacets = 180; //cylinder facets - for export
+cylinderFacets = 36; //cylinder facets - decreased for quicker rendering
 $fn = cylinderFacets;
 
 //webbing info in mm
@@ -495,14 +495,20 @@ wheelClipDepth = 3;
 wheelClipWidth = 25;
 wheelClipHeight = SpoolOuterDiameter*3/5;
 
-webbingClipGap = 2;
-webbingClipJoinHeight = 7;
+webbingClipGap = 2; //how much to leave for molle straps?
+webbingClipJoinHeight = 7; //how much material to secure clip to spool & base
+
+wheelClipTrapezoidHeight = 10;
+wheelClipTrapezoidWidth = wheelClipWidth/2;
+wheelClipTrapezoidWidthRatio = 1.3;
+wheelClipTrapezoidDepth = wheelHeight;
+
 
 module wheelClip(){
     
 translate([0,200,0]){
     
-    //clip
+    //clip 
     translate([-SpoolOuterDiameter/4,-wheelClipWidth/2,-wheelClipBaseDepth-webbingClipGap-wheelClipDepth]){
         cube([wheelClipHeight,wheelClipWidth,wheelClipDepth]);
     }
@@ -512,7 +518,7 @@ translate([0,200,0]){
         cube([webbingClipJoinHeight,wheelClipWidth,webbingClipGap]);
     }
     
-    //clip base
+    //clip base (that goes into spool wheel)
     translate([-SpoolOuterDiameter/4,-wheelClipWidth/2,-wheelClipBaseDepth]){
         cube([SpoolOuterDiameter/4+(hubInnerInnerRadius + 2 * hubWallThickness),wheelClipWidth,wheelClipBaseDepth]);
     }
@@ -522,7 +528,7 @@ translate([0,200,0]){
             cube([SpoolOuterDiameter/4,wheelClipWidth,wheelHeight*wheelClipWheelDepthFactor]);
         }
     
-        //holes to cut from larger spool wheel
+        //originally holes to cut from larger spool wheel, used here to intersect with big block and keep intersections
         for (i = [0:wheelSubtractionHoleNumber-1]) {
             rotate([0,0,wheelSubtractionHoleRotation * i]){
                 translate([wheelSubtractionHoleTranslation,0,0]){
@@ -532,13 +538,49 @@ translate([0,200,0]){
         }
     }
     
-    //TODO make trapeoid join / and gap in wheel
     
-    //TODO round edges where ooutward contatct with molle
+    trapezoidPoints = [
+  [  -wheelClipTrapezoidHeight,  -(wheelClipTrapezoidWidth/2),  0 ],  //0
+  [ 0,  -(wheelClipTrapezoidWidth/2),  0 ],  //1
+  [ 0,  (wheelClipTrapezoidWidth/2),  0 ],  //2
+  [  -wheelClipTrapezoidHeight,  (wheelClipTrapezoidWidth/2),  0 ],  //3
+  [  -wheelClipTrapezoidHeight,  -(wheelClipTrapezoidWidth/2*wheelClipTrapezoidWidthRatio),  wheelClipTrapezoidDepth ],  //4
+  [ 0,  -(wheelClipTrapezoidWidth/2*wheelClipTrapezoidWidthRatio),  wheelClipTrapezoidDepth ],  //5
+  [ 0,  (wheelClipTrapezoidWidth/2*wheelClipTrapezoidWidthRatio),  wheelClipTrapezoidDepth ],  //6
+  [  -wheelClipTrapezoidHeight,  (wheelClipTrapezoidWidth/2*wheelClipTrapezoidWidthRatio),  wheelClipTrapezoidDepth ]]; //7
+  
+trapezoidFaces = [
+  [0,1,2,3],  // bottom
+  [4,5,1,0],  // front
+  [7,6,5,4],  // top
+  [5,6,2,1],  // right
+  [6,7,3,2],  // back
+  [7,4,0,3]]; // left
+  
+
+
+    //TODO make trapeoid join / and gap in wheel
+    translate([wheelSubtractionHoleTranslation - wheelSubtractionHoleRadius,0,0]){
+        polyhedron( trapezoidPoints, trapezoidFaces );
+    }
+    
+    //TODO round edges of clip where outward contatct with molle
+    
+    translation([0,0,0]){
+        rotate([0,0,0]){
+            cylinder();
+        }
+    }
+    translate([10,0,0]){
+        cylinder(1,1);
+    }
+    translate([wheelSubtractionHoleTranslation - wheelSubtractionHoleRadius,-(wheelClipWidth/2-wheelClipBaseDepth/2),-wheelClipBaseDepth/2]){
+        sphere(wheelClipBaseDepth/2);
+    }
 }  
 }
             
-//wheelBottom();
-wheelTop();
+wheelBottom();
+//wheelTop();
 //rotate([0,90,0])snapFitPeg();
-//wheelClip();
+wheelClip();

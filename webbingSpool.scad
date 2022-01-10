@@ -1,9 +1,20 @@
 // webbing spool
 //justin lowe 20201002
 
-//cylinderFacets = 180; //cylinder facets - for export
-cylinderFacets = 36; //cylinder facets - decreased for quicker rendering
-$fn = cylinderFacets;
+//renderFacets = 180; //cylinder facets - for export
+renderFacets = 90; //cylinder facets - for export
+draftFacets = 18; //cylinder facets - decreased for quicker rendering
+$fn = renderFacets;
+
+currentFacets = $fn;
+
+/* TODO
+
+- split out wheel to own module
+- create module for top vs bottom central hub
+
+*/
+//
 
 //webbing info in mm
 webbingThickness = 2;
@@ -134,259 +145,212 @@ echo("Clip Rounding cylinder translation = ", clipRoundingHoleCenterTranslation)
 //
 // snap fit peg
 module snapFitPeg(){
-translate([-(SpoolOuterDiameter * 0.8),0,0]){
-difference(){
-    union(){
-        //bottom torus
-        translate([0,0,snapFitJointHeight/2]){
-            scale([1,1,1]){
-                rotate_extrude(convexity = 10){
-                    translate([-snapFitJointVoidDiameter/2,0,0]){
-                        difference(){
-                            circle(snapFitJointHeight/2);
-                            translate([0,-snapFitJointHeight/2,0]){
-                                square(snapFitJointHeight/2*2);
+    difference(){
+        union(){
+            //bottom torus
+            translate([0,0,snapFitJointHeight/2]){
+                scale([1,1,1]){
+                    rotate_extrude(convexity = 10){
+                        translate([-snapFitJointVoidDiameter/2,0,0]){
+                            difference(){
+                                circle(snapFitJointHeight/2);
+                                translate([0,-snapFitJointHeight/2,0]){
+                                    square(snapFitJointHeight/2*2);
+                                }
                             }
                         }
                     }
                 }
             }
-        }
+        
+            //shaft joining toruses
+    //        snapFitPegJointShaftOverlapRadius = snapFitJointHeight/4;
+    //        snapFitPegVerticalOverlap = snapFitJointHeight*2/3;
+            translate([0,0,snapFitJointHeight-snapFitPegVerticalOverlap]){
+                cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2), d2=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2));
+            }
+            
+            //top torus
+            translate([0,0,snapFitPegJointSeperation+snapFitJointHeight*3/2]){
+                scale([1,1,1]){
+                    rotate_extrude(convexity = 10){
+                        translate([-snapFitJointVoidDiameter/2,0,0]){
+                            difference(){
+                                circle(snapFitJointHeight/2);
+                                translate([0,-snapFitJointHeight/2,0]){
+                                    square(snapFitJointHeight/2*2);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } //end union
     
-        //shaft joining toruses
-//        snapFitPegJointShaftOverlapRadius = snapFitJointHeight/4;
-//        snapFitPegVerticalOverlap = snapFitJointHeight*2/3;
-        translate([0,0,snapFitJointHeight-snapFitPegVerticalOverlap]){
-            cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2), d2=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2));
+    
+        //chop off +X side of peg        
+        translate([snapFitJointVoidDiameter/2-snapFitSquaring,-(snapFitJointVoidDiameter/2+snapFitJointHeight),0]){
+            cube([snapFitJointHeight*2,snapFitJointHeight*2+snapFitJointVoidDiameter,30]);
         }
         
-        //top torus
-        translate([0,0,snapFitPegJointSeperation+snapFitJointHeight*3/2]){
-            scale([1,1,1]){
-                rotate_extrude(convexity = 10){
-                    translate([-snapFitJointVoidDiameter/2,0,0]){
-                        difference(){
-                            circle(snapFitJointHeight/2);
-                            translate([0,-snapFitJointHeight/2,0]){
-                                square(snapFitJointHeight/2*2);
-                            }
-                        }
-                    }
-                }
-            }
+         //chop off -X side of peg 
+        translate([-(snapFitJointVoidDiameter/2-snapFitSquaring)-snapFitJointHeight*2,-(snapFitJointVoidDiameter/2+snapFitJointHeight),0]){
+            cube([snapFitJointHeight*2,snapFitJointHeight*2+snapFitJointVoidDiameter,30]);
         }
-    } //end union
-
-
-    //chop off +X side of peg        
-    translate([snapFitJointVoidDiameter/2-snapFitSquaring,-(snapFitJointVoidDiameter/2+snapFitJointHeight),0]){
-        cube([snapFitJointHeight*2,snapFitJointHeight*2+snapFitJointVoidDiameter,30]);
-    }
-    
-     //chop off -X side of peg 
-    translate([-(snapFitJointVoidDiameter/2-snapFitSquaring)-snapFitJointHeight*2,-(snapFitJointVoidDiameter/2+snapFitJointHeight),0]){
-        cube([snapFitJointHeight*2,snapFitJointHeight*2+snapFitJointVoidDiameter,30]);
-    }
-    
-    //remove sphere from bottom side of peg
-    translate([0,0,-snapFitJointVoidDiameter/2+snapFitJointHeight+(snapFitPegJointSeperation-snapFitPegJoinHeight)/2]){
-        sphere(d=snapFitJointVoidDiameter);
-    }
-    
-    //remove sphere from top side of peg
-    translate([0,0,snapFitJointVoidDiameter/2+snapFitJointHeight+snapFitPegJointSeperation-(snapFitPegJointSeperation-snapFitPegJoinHeight)/2]){
-        sphere(d=snapFitJointVoidDiameter);
-    }
-    
-    //remove cylinder from bottom side of peg
-    translate([0,0,0]){
-        cylinder(-snapFitJointVoidDiameter/2+snapFitJointHeight+(snapFitPegJointSeperation-snapFitPegJoinHeight)/2, d1=snapFitJointVoidDiameter, d2=snapFitJointVoidDiameter);
-    }
-    
-    //remove cylinder from top side of peg
-    translate([0,0,snapFitJointVoidDiameter/2+snapFitJointHeight+snapFitPegJointSeperation-(snapFitPegJointSeperation-snapFitPegJoinHeight)/2]){
-        cylinder(-snapFitJointVoidDiameter/2+snapFitJointHeight+(snapFitPegJointSeperation-snapFitPegJoinHeight)/2, d1=snapFitJointVoidDiameter, d2=snapFitJointVoidDiameter);
+        
+        //remove sphere from bottom side of peg
+        translate([0,0,-snapFitJointVoidDiameter/2+snapFitJointHeight+(snapFitPegJointSeperation-snapFitPegJoinHeight)/2]){
+            sphere(d=snapFitJointVoidDiameter);
+        }
+        
+        //remove sphere from top side of peg
+        translate([0,0,snapFitJointVoidDiameter/2+snapFitJointHeight+snapFitPegJointSeperation-(snapFitPegJointSeperation-snapFitPegJoinHeight)/2]){
+            sphere(d=snapFitJointVoidDiameter);
+        }
+        
+        //remove cylinder from bottom side of peg
+        translate([0,0,0]){
+            cylinder(-snapFitJointVoidDiameter/2+snapFitJointHeight+(snapFitPegJointSeperation-snapFitPegJoinHeight)/2, d1=snapFitJointVoidDiameter, d2=snapFitJointVoidDiameter);
+        }
+        
+        //remove cylinder from top side of peg
+        translate([0,0,snapFitJointVoidDiameter/2+snapFitJointHeight+snapFitPegJointSeperation-(snapFitPegJointSeperation-snapFitPegJoinHeight)/2]){
+            cylinder(-snapFitJointVoidDiameter/2+snapFitJointHeight+(snapFitPegJointSeperation-snapFitPegJoinHeight)/2, d1=snapFitJointVoidDiameter, d2=snapFitJointVoidDiameter);
+        }
     }
 }
-}
-}
+//whitespace
 
 
 
 //spool halves consist of smaller & taller inner cylinder (with one central hole), larger and much shorter wheel cylinder (with holes in wheel cylinder to lighten weight)
 
-      
 
 //
 //
-//bottom & stationary wheel of spool
-module wheelBottom(){
-difference(){
-    union(){
-        //wheel
-        //large spool wheel
-        cylinder(wheelHeight, SpoolOuterDiameter/2, SpoolOuterDiameter/2, false, $fn = cylinderFacets);
+// wheel base - w argument for optional carabiner clip
+module wheelBase(clipHoleBool, retainerClipsBool) {
+    difference(){
+        union(){
+            //wheel
+            //large spool wheel
+            cylinder(wheelHeight, SpoolOuterDiameter/2, SpoolOuterDiameter/2, false, $fn = currentFacets);
+                
+            if (clipHoleBool) {
+                //clip hole bump out
+                translate([0,0,0]){
+                    cube([SpoolOuterDiameter/2, SpoolOuterDiameter/2, wheelHeight], false);
+                }
+            } //end if
             
-         
-        //inner spool, outer wall
-        cylinder( (spoolGapWidth * 0.45) + wheelHeight, hubInnerOuterRadius, hubInnerOuterRadius, false, $fn = cylinderFacets); //doulbe up wheelheight to mate wheels evenly
-        
-        //clip hole bump out
-        translate([0,0,0]){
-            cube([SpoolOuterDiameter/2, SpoolOuterDiameter/2, wheelHeight], false);
-        }
-    }
-    
-    //smooth out clip square corner
-    translate([clipRoundingHoleCenterTranslation, clipRoundingHoleCenterTranslation, 0]){
-        difference(){
-            cube([clipRoundingHoleDiameter/2, clipRoundingHoleDiameter/2, wheelHeight], false);  
-            cylinder(wheelHeight, clipRoundingHoleDiameter/2, clipRoundingHoleDiameter/2, false, $fn = cylinderFacets);
-        }
-    }
-    
-    //check that clip isn't messed up in a few ways
-    if( (clipRoundingHoleDiameter/2) > (carabinerHoleDiameter/2 + carabinerHoleDistanceEdgeThreshold) ){
-        echo("Clip hole Diameter OK");
-        clipHoleCenterTranslation = clipRoundingHoleCenterTranslation;
-        //make hole in clip hole bump out
-        translate([clipHoleCenterTranslation, clipHoleCenterTranslation, 0]){
-            cylinder(wheelHeight, carabinerHoleDiameter/2, carabinerHoleDiameter/2, false, $fn = cylinderFacets);
-        }
-    }
-    else
-    {
-        echo("Clip hole Diameter NOT OK");
-        echo("Clip hole was", (clipRoundingHoleDiameter/2) - (carabinerHoleDiameter/2)," away from edge");
-        clipHoleCenterTranslation = clipRoundingHoleCenterTranslation - (carabinerHoleDistanceEdgeThreshold - ((clipRoundingHoleDiameter/2) - (carabinerHoleDiameter/2)));
-        echo("Clip hole translation now = ", clipHoleCenterTranslation);
-        //make hole in clip hole bump out
-        translate([clipHoleCenterTranslation, clipHoleCenterTranslation, 0]){
-            cylinder(wheelHeight, carabinerHoleDiameter/2, carabinerHoleDiameter/2, false, $fn = cylinderFacets);
-        }
-    } 
-
-    //holes to cut from larger spool wheel
-    for (i = [0:wheelSubtractionHoleNumber-1]) {
-        rotate([0,0,wheelSubtractionHoleRotation * i]){
-            translate([wheelSubtractionHoleTranslation,0,0]){
-                cylinder(wheelHeight, wheelSubtractionHoleRadius, wheelSubtractionHoleRadius, false, $fn = cylinderFacets);
+            if (retainerClipsBool) {
+                retainerClips();
             }
-        }
-    }
-    
-    //snap fit torus
-    translate([0,0,wheelHeight+snapFitJointHeight/2+snapFitJointVerticalGap]){
-        scale([1,1,1]){
-            rotate_extrude(convexity = 10){
-                translate([-snapFitJointVoidDiameter/2,0,0]){
-                    difference(){
-                        circle(snapFitJointHeight/2+snapFitJointVerticalGap);
-                        translate([0,-snapFitJointHeight/2,0]){
-                            square((snapFitJointHeight/2+snapFitJointVerticalGap)*2);
-                        }
-                    }
+        } //end union of wheel base and clip bumpout
+        
+        if (clipHoleBool) {
+            //smooth out clip square corner
+            translate([clipRoundingHoleCenterTranslation, clipRoundingHoleCenterTranslation, 0]){
+                difference(){
+                    cube([clipRoundingHoleDiameter/2, clipRoundingHoleDiameter/2, wheelHeight], false);  
+                    cylinder(wheelHeight, clipRoundingHoleDiameter/2, clipRoundingHoleDiameter/2, false, $fn = currentFacets);
                 }
             }
-        }
-    }
+            
+            //check that clip isn't messed up in a few ways
+            if( (clipRoundingHoleDiameter/2) > (carabinerHoleDiameter/2 + carabinerHoleDistanceEdgeThreshold) ){
+                echo("Clip hole Diameter OK");
+                clipHoleCenterTranslation = clipRoundingHoleCenterTranslation;
+                //make hole in clip hole bump out
+                translate([clipHoleCenterTranslation, clipHoleCenterTranslation, 0]){
+                    cylinder(wheelHeight, carabinerHoleDiameter/2, carabinerHoleDiameter/2, false, $fn = currentFacets);
+                }
+            }
+            else
+            {
+                echo("Clip hole Diameter NOT OK");
+                echo("Clip hole was", (clipRoundingHoleDiameter/2) - (carabinerHoleDiameter/2)," away from edge");
+                clipHoleCenterTranslation = clipRoundingHoleCenterTranslation - (carabinerHoleDistanceEdgeThreshold - ((clipRoundingHoleDiameter/2) - (carabinerHoleDiameter/2)));
+                echo("Clip hole translation now = ", clipHoleCenterTranslation);
+                //make hole in clip hole bump out
+                translate([clipHoleCenterTranslation, clipHoleCenterTranslation, 0]){
+                    cylinder(wheelHeight, carabinerHoleDiameter/2, carabinerHoleDiameter/2, false, $fn = currentFacets);
+                }
+            }
+        } //end if clipHoleBool
     
-    //remove torus center
-    translate([0,0,wheelHeight]){
-        cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter*1.1, d2=snapFitJointVoidDiameter*1.1);
-    }
-    
-    //make hole for snap fit shaft (that joins toruses)
-    translate([0,0,wheelHeight+snapFitJointHeight-snapFitPegVerticalOverlap]){
-        cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2), d2=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2));
-    }
-    
-    //make hole for snap fit shaft angles a bit 
-    translate([0,0,(spoolGapWidth * 0.45) + wheelHeight-2]){
-        cylinder(2, d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2), d2=(snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2))*1.2);
-    } 
-    
+        //holes to cut from larger spool wheel (2x wheelHeight to remove overlap from retianer clips)
+        for (i = [0:wheelSubtractionHoleNumber-1]) {
+            rotate([0,0,wheelSubtractionHoleRotation * i]){
+                translate([wheelSubtractionHoleTranslation,0,0]){
+                    cylinder(2*wheelHeight, wheelSubtractionHoleRadius, wheelSubtractionHoleRadius, false, $fn = currentFacets);
+                }
+            }
+        } //end for
+    }                      
 }
-}
-
-//whitespace
+//whitespace at end of wheelBase
 
 
-//          //make hole for snap fit shaft angles a bit 
-//    translate([0,0,(spoolGapWidth * 0.45) + wheelHeight-2]){
-//        cylinder(2, d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2), d2=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2)+10);
-//    } 
-        
+
+
 //
 //
-// top & moving wheel of spool
-//
-//
-module wheelTop(){
-translate([(SpoolOuterDiameter * 1.1),0,0]){
-    union(){
-        difference(){
-            union(){
-                //wheel
-                cylinder(wheelHeight, SpoolOuterDiameter/2, SpoolOuterDiameter/2, false, $fn = cylinderFacets);
-                    
-                //outer spool
-                cylinder(spoolGapWidth + wheelHeight, hubOuterOuterRadius, hubOuterOuterRadius, false, $fn = cylinderFacets);
-                
-                
-                //TODO move clips closer
-                //webbing clips
-                for (i = [0:webbingClipNumber-1]) {
-                    rotate([0,0,wheelSubtractionHoleRotation * i
-                    + 6]){
-                        translate([-1 * (hubOuterOuterRadius + webbingThickness - webbingThicknessClipAdjustment) - webbingClipDepth, 0, 0]) {
-                            difference(){
-                                union(){
-                                    cube([webbingClipDepth,webbingClipWidth,(0.95*spoolGapWidth) + wheelHeight],false);
-                                    
-                                    rotate([0,0,0]){
-                                        translate([0,webbingClipWidth,wheelHeight]){
-                                            difference(){
-                                                cube([webbingClipDepth,4,4]); //webbingClipDepth,webbingClipWidth
-                                    
-                                                translate([0,3,3]){
-                                                    rotate([0,90,0]){
-                                                        cylinder(webbingClipDepth,3,3);
-                                                    }
-                                                }
-                                                
-                                                translate([0,3,0]){
-                                                    cube([webbingClipDepth,4,4]);
-                                                }
-                                                translate([0,0,3]){
-                                                    cube([webbingClipDepth,4,4]);
-                                                }
-                                            }
+// retainer clips - to hold webbing against central cylinder
+module retainerClips() {
+    //TODO move clips closer
+    //webbing clips
+    for (i = [0:webbingClipNumber-1]) {
+        rotate([0,0,wheelSubtractionHoleRotation * i
+        + 6]){
+            translate([-1 * (hubOuterOuterRadius + webbingThickness - webbingThicknessClipAdjustment) - webbingClipDepth, 0, 0]) {
+                difference(){
+                    union(){
+                        cube([webbingClipDepth,webbingClipWidth,(0.95*spoolGapWidth) + wheelHeight],false);
+                        
+                        rotate([0,0,0]){
+                            translate([0,webbingClipWidth,wheelHeight]){
+                                difference(){
+                                    cube([webbingClipDepth,4,4]); //webbingClipDepth,webbingClipWidth
+                        
+                                    translate([0,3,3]){
+                                        rotate([0,90,0]){
+                                            cylinder(webbingClipDepth,3,3);
                                         }
                                     }
                                     
-                                    rotate([0,0,180]){
-                                        translate([-webbingClipDepth,0,wheelHeight]){
-                                            difference(){
-                                                cube([webbingClipDepth,4,4]); //webbingClipDepth,webbingClipWidth
-                                    
-                                                translate([0,3,3]){
-                                                    rotate([0,90,0]){
-                                                        cylinder(webbingClipDepth,3,3);
-                                                    }
-                                                }
-                                                
-                                                translate([0,3,0]){
-                                                    cube([webbingClipDepth,4,4]);
-                                                }
-                                                translate([0,0,3]){
-                                                    cube([webbingClipDepth,4,4]);
-                                                }
-                                            }
+                                    translate([0,3,0]){
+                                        cube([webbingClipDepth,4,4]);
+                                    }
+                                    translate([0,0,3]){
+                                        cube([webbingClipDepth,4,4]);
+                                    }
+                                }
+                            }
+                        } //end rotate
+                        
+                        rotate([0,0,180]){
+                            translate([-webbingClipDepth,0,wheelHeight]){
+                                difference(){
+                                    cube([webbingClipDepth,4,4]); //webbingClipDepth,webbingClipWidth
+                        
+                                    translate([0,3,3]){
+                                        rotate([0,90,0]){
+                                            cylinder(webbingClipDepth,3,3);
                                         }
                                     }
                                     
-                                    
+                                    translate([0,3,0]){
+                                        cube([webbingClipDepth,4,4]);
+                                    }
+                                    translate([0,0,3]){
+                                        cube([webbingClipDepth,4,4]);
+                                    }
+                                }
+                            }
+                        } //end rotate
+                        
+                        
 //                                    translate([0,0,(0.95*spoolGapWidth) + wheelHeight - webbingClipWidth/2]){
 //                                    difference(){
 //                                        cube([webbingClipDepth,webbingClipWidth,webbingClipWidth/2],false);
@@ -398,94 +362,128 @@ translate([(SpoolOuterDiameter * 1.1),0,0]){
 //                                        }
 //                                    }
 //                                }
-                            
-                            } //end union
-                            
-                            
-                            
-                            translate([0,0,(0.95*spoolGapWidth) + wheelHeight - webbingClipWidth/2]){
-                                    difference(){
-                                        cube([webbingClipDepth,webbingClipWidth,webbingClipWidth/2],false);
-                            
-                                        translate([0,webbingClipWidth/2,0]){
-                                            rotate([0,90,0]){
-                                                cylinder(webbingClipDepth,webbingClipWidth/2,webbingClipWidth/2);
-                                            }
-                                        }
-                                    }
-                                }
-                            
-                            
-                            
-                            
-                        }
-
-
-                        }
-                    }
-                }
                 
-            } //end union
-            
-            for (i = [0:wheelSubtractionHoleNumber-1]) {
-                rotate([0,0,wheelSubtractionHoleRotation * i]){
-                    translate([wheelSubtractionHoleTranslation,0,0]){
-                        cylinder(2*wheelHeight, wheelSubtractionHoleRadius, wheelSubtractionHoleRadius, false, $fn = cylinderFacets);
-                    }
-                }
-            }
-            
-            
-            //spool void
-            
-//            //smaller void
-//            translate([0,0,wheelHeight]){
-//                cylinder(spoolGapWidth, hubInnerInnerRadius, hubInnerInnerRadius, false, $fn = cylinderFacets); 
-//            }
-            
-            //larger hub void
-            translate([0,0,wheelHeight + (spoolGapWidth * 0.45)]){
-                cylinder((spoolGapWidth * 0.55), hubOuterInnerRadius, hubOuterInnerRadius, false, $fn = cylinderFacets); 
-            }
-            
-            //snap fit torus
-            translate([0,0,wheelHeight+snapFitJointHeight/2+snapFitJointVerticalGap]){
-                scale([1,1,1]){
-                    rotate_extrude(convexity = 10){
-                        translate([-snapFitJointVoidDiameter/2,0,0]){
-                            difference(){
-                                circle(snapFitJointHeight/2+snapFitJointVerticalGap);
-                                translate([0,-snapFitJointHeight/2,0]){
-                                    square((snapFitJointHeight/2+snapFitJointVerticalGap)*2);
+                    } //end union
+                
+                
+                    translate([0,0,(0.95*spoolGapWidth) + wheelHeight - webbingClipWidth/2]){
+                        difference(){
+                            cube([webbingClipDepth,webbingClipWidth,webbingClipWidth/2],false);
+                
+                            translate([0,webbingClipWidth/2,0]){
+                                rotate([0,90,0]){
+                                    cylinder(webbingClipDepth,webbingClipWidth/2,webbingClipWidth/2);
                                 }
+                            }
+                            
+                        } //end difference
+                    } //end translate
+                         
+                }
+
+            } //end translate
+        } //end rotate (of clip(s) around central hub)
+    } //end for
+}
+
+//
+//
+// hub for bottom wheel - receives webbing, has retainer clips, larger diameter central cylinder - spins freely to spool off the webbing
+module hubBottom() {
+    
+    difference() {
+        //outer spool
+        cylinder(spoolGapWidth + wheelHeight, hubOuterOuterRadius, hubOuterOuterRadius, false, $fn = currentFacets);
+        
+        //larger hub void
+        translate([0,0,wheelHeight + (spoolGapWidth * 0.45)]){
+            cylinder((spoolGapWidth * 0.55), hubOuterInnerRadius, hubOuterInnerRadius, false, $fn = currentFacets); 
+        }
+        
+        //snap fit torus
+        translate([0,0,wheelHeight+snapFitJointHeight/2+snapFitJointVerticalGap]){
+            scale([1,1,1]){
+                rotate_extrude(convexity = 10){
+                    translate([-snapFitJointVoidDiameter/2,0,0]){
+                        difference(){
+                            circle(snapFitJointHeight/2+snapFitJointVerticalGap);
+                            translate([0,-snapFitJointHeight/2,0]){
+                                square((snapFitJointHeight/2+snapFitJointVerticalGap)*2);
                             }
                         }
                     }
                 }
             }
+        } //end translate (snap fit torus)
+
+        //remove torus center
+        translate([0,0,wheelHeight]){
+            cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter*1.1, d2=snapFitJointVoidDiameter*1.1);
+        }
+        
+        //make hole for snap fit shaft (that joins toruses)
+        translate([0,0,wheelHeight+snapFitJointHeight-snapFitPegVerticalOverlap]){
+            cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2), d2=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2));
+        }
+        
+        //make hole for snap fit shaft angles a bit 
+        translate([0,0,(spoolGapWidth * 0.45) + wheelHeight-2]){
+            cylinder(2, d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2), d2=(snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2))*1.2);
+        }
     
-            //remove torus center
-            translate([0,0,wheelHeight]){
-                cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter*1.1, d2=snapFitJointVoidDiameter*1.1);
+    } //end difference           
+
+}
+//whitepace at end of hubBottom
+
+
+//
+//
+// hub for top wheel - smaller diameter central cylinder - has clip hole and does not spin when spooling off webbing
+module hubTop() {
+    difference() {
+        //inner spool, outer wall
+        cylinder( (spoolGapWidth * 0.45) + wheelHeight, hubInnerOuterRadius, hubInnerOuterRadius, false, $fn = currentFacets); //double up wheelheight to mate wheels evenly
+        
+        //snap fit torus
+        translate([0,0,wheelHeight+snapFitJointHeight/2+snapFitJointVerticalGap]){
+            scale([1,1,1]){
+                rotate_extrude(convexity = 10){
+                    translate([-snapFitJointVoidDiameter/2,0,0]){
+                        difference(){
+                            circle(snapFitJointHeight/2+snapFitJointVerticalGap);
+                            translate([0,-snapFitJointHeight/2,0]){
+                                square((snapFitJointHeight/2+snapFitJointVerticalGap)*2);
+                            }
+                        }
+                    }
+                }
             }
-            
-            //make hole for snap fit shaft (that joins toruses)
-            translate([0,0,wheelHeight+snapFitJointHeight-snapFitPegVerticalOverlap]){
-                cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2), d2=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2));
-            }
-            
-            //make hole for snap fit shaft angles a bit 
-            translate([0,0,(spoolGapWidth * 0.45) + wheelHeight-2]){
-                cylinder(2, d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2), d2=(snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2))*1.2);
-            }
-    
+        }
+        
+        //remove torus center
+        translate([0,0,wheelHeight]){
+            cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter*1.1, d2=snapFitJointVoidDiameter*1.1);
+        }
+        
+        //make hole for snap fit shaft (that joins toruses)
+        translate([0,0,wheelHeight+snapFitJointHeight-snapFitPegVerticalOverlap]){
+            cylinder(snapFitPegJointSeperation+(2*snapFitPegVerticalOverlap), d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2), d2=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2));
+        }
+        
+        //make hole for snap fit shaft angles a bit 
+        translate([0,0,(spoolGapWidth * 0.45) + wheelHeight-2]){
+            cylinder(2, d1=snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2), d2=(snapFitJointVoidDiameter+(snapFitPegJointShaftOverlapRadius*2)+(snapFitPegHorizontalGap*2))*1.2);
         } 
         
-    }
+    } //end difference
+    
 }
-}
-//whitespace
+//whitespace at end of hubTop
 
+//
+// IN PROGRESS
+//
 
 webbingClipWheelOffset = 0.2;
 wheelClipWheelDepthFactor = 0.75;
@@ -503,12 +501,14 @@ wheelClipTrapezoidWidth = wheelClipWidth/2;
 wheelClipTrapezoidWidthRatio = 1.3;
 wheelClipTrapezoidDepth = wheelHeight;
 
-
+//
+//TODO wheelClip is not finished
+//
 module wheelClip(){
     
 translate([0,200,0]){
     
-    //clip 
+    //clip
     translate([-SpoolOuterDiameter/4,-wheelClipWidth/2,-wheelClipBaseDepth-webbingClipGap-wheelClipDepth]){
         cube([wheelClipHeight,wheelClipWidth,wheelClipDepth]);
     }
@@ -532,12 +532,11 @@ translate([0,200,0]){
         for (i = [0:wheelSubtractionHoleNumber-1]) {
             rotate([0,0,wheelSubtractionHoleRotation * i]){
                 translate([wheelSubtractionHoleTranslation,0,0]){
-                    cylinder(wheelHeight*wheelClipWheelDepthFactor, wheelSubtractionHoleRadius-webbingClipWheelOffset, wheelSubtractionHoleRadius-webbingClipWheelOffset, false, $fn = cylinderFacets);
+                    cylinder(wheelHeight*wheelClipWheelDepthFactor, wheelSubtractionHoleRadius-webbingClipWheelOffset, wheelSubtractionHoleRadius-webbingClipWheelOffset, false, $fn = currentFacets);
                 }
             }
         }
     }
-    
     
     trapezoidPoints = [
   [  -wheelClipTrapezoidHeight,  -(wheelClipTrapezoidWidth/2),  0 ],  //0
@@ -549,7 +548,7 @@ translate([0,200,0]){
   [ 0,  (wheelClipTrapezoidWidth/2*wheelClipTrapezoidWidthRatio),  wheelClipTrapezoidDepth ],  //6
   [  -wheelClipTrapezoidHeight,  (wheelClipTrapezoidWidth/2*wheelClipTrapezoidWidthRatio),  wheelClipTrapezoidDepth ]]; //7
   
-trapezoidFaces = [
+    trapezoidFaces = [
   [0,1,2,3],  // bottom
   [4,5,1,0],  // front
   [7,6,5,4],  // top
@@ -566,7 +565,7 @@ trapezoidFaces = [
     
     //TODO round edges of clip where outward contatct with molle
     
-    translation([0,0,0]){
+    translate([0,0,0]){
         rotate([0,0,0]){
             cylinder();
         }
@@ -579,8 +578,40 @@ trapezoidFaces = [
     }
 }  
 }
-            
-wheelBottom();
-//wheelTop();
+//whitespace
+
+
+//wheelClip();
+
+
+
+//todo rotate to lie flat?
+//todo remove translation of peg
 //rotate([0,90,0])snapFitPeg();
-wheelClip();
+//snapFitPeg();
+
+bottomBool = false;
+pegBool = false;
+
+if (pegBool) {
+    rotate([0,90,0]) {
+        snapFitPeg();
+    }
+}
+else
+{
+
+    if (bottomBool) {
+        union() {
+            wheelBase(false, true);
+            hubBottom();
+        }
+    }
+    else
+    {
+        union() {
+            wheelBase(true, false);
+            hubTop();
+        }
+    } //end if bottomBool
+} //end if pegBool

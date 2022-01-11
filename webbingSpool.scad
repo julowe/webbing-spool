@@ -1,36 +1,74 @@
 // webbing spool
-//justin lowe 20201002
-
-//renderFacets = 180; //cylinder facets - for export
-renderFacets = 90; //cylinder facets - for export
-draftFacets = 18; //cylinder facets - decreased for quicker rendering
-$fn = renderFacets;
-
-currentFacets = $fn;
+//justin lowe 2021-01-11
 
 /* TODO
 
-- split out wheel to own module
-- create module for top vs bottom central hub
+- fix up comments to support customizer style (line before, not trailing)
+- check overlap of circles to remove from spool wheel, increase number for longer webbing lengths (over ~20ft). Or make ovals?
+- ugh, add some padding to all differences just so that previews of objects will not have artifcating?
+- tweak some built in dimensions - inner hub diam, wheel thickness, hub wall thickness
+- clip to snap on to wheel for another attachemtn option (other than/in addition to carabiner hole)
 
 */
 //
 
-//webbing info in mm
-webbingThickness = 2;
-webbingThicknessClipAdjustment = 0.1;
-webbingWidth = 25.25; //actual 25.25
-webbingLength = 305 * 15; //305mm in one ft
+
+/* [Output Options] */
+
+//Cylinder Facets - IMPORTANT: Choose higher (>= 90) for smooth final render/object, smaller for quick draft preview. (Default is set small so Thingiverse will create preview quicker)
+Current_Facets = 18; // [18,36,90,180]
+//FYI: 18 is what I usually use for previews, 90 or 180 for final renders.
+$fn = Current_Facets;
+
+//Make Bottom of Spool Wheel, Top of Spool Wheel, or central joining Peg
+Output_Object = "Peg"; // [Bottom, Top, Peg]
+
+
+/* [Webbing Info] */
+
+//Width of Webbing (in mm)
+Webbing_Width = 25.25; 
+//actual 25.25mm
+
+//Length of Webbing (in feet) (Longer than 20' currently generates unprintable objects, need to fix that...)
+Webbing_Length_ft = 15; // [2:0.5:21]
+// [2:0.5:100]
+webbingLength = 305 * Webbing_Length_ft; //305mm in one ft
+
+//Thickness of Webbing (in mm)
+Webbing_Thickness = 2;
+
+//Space (in mm) to add between Webbing Retaining Clips aroudn central hub and Webbing itself. Changing this will make webbing easier or harder to thread/pull past clip
+Webbing_Thickness_Padding_For_Clips = 0.1;
 //webbingLength = 305 * .00001; //305mm in one ft
 
-//carabiner info
+/* [Carabiner Info] */
 //most carabiners seem to be 10 to 14mm diameter materials
-carabinerHoleDiameter = 18; //18mm = 0.7inches
-carabinerHoleDistanceEdgeThreshold = 5;
+
+//Diameter (in mm) of hole for carabiner/attachment point
+Carabiner_Hole_Diameter = 18; 
+//18mm = 0.7inches
+
+//Distance (in mm) from edge of material to edge of hole for carabiner
+Carabiner_Hole_Edge_Threshold_Distance = 5;
+
+/* [Retainer Clips] */
+//Number of clips that will hold webbing against central hub of Spool
+Webbing_Clip_Number = 2;
+
+module __Just_A_Module_to_stop_below_values_from_showing_in_Customizer__ () {}
+//https://en.m.wikibooks.org/wiki/OpenSCAD_User_Manual/Customizer#supported_variables
+
+//still retainer clip info, but probably shouldn't be easily chagned by user/in customizer
+webbingClipWidth = 5;
+webbingClipDepth = 3;
+
 
 //spool info
+//TODO Change this padding?? Prob don't need quite as much
 hubInnerInnerDiameter = 24; //empty space in center of spool, bottom wheel
 hubInnerInnerRadius = hubInnerInnerDiameter/2;
+//TODO make wall thinner? test print
 hubWallThickness = 3;
 hubInnerOuterGap = 0.3; //gap for smooth spinning
 
@@ -44,17 +82,16 @@ hubInnerOuterRadius = hubInnerOuterDiameter/2;
 hubOuterOuterRadius = hubOuterOuterDiameter/2;
 hubOuterInnerRadius = hubOuterInnerDiameter/2;
 
-spoolGapWidth = webbingWidth + 3; //total gap between two wheels of spool and wide edge of webbing
+spoolGapWidth = Webbing_Width + 3; //total gap between two wheels of spool and wide edge of webbing
 spoolOuterRadiusPadding = 5; //how much overhang of spool wheels past spooled webbing
+
+//TODO make thinner? 3? 2?
 wheelHeight = 4;
 wheelSubtractionHoleOuterPadding = 7; //distance between subtracted hole and outer edge of wheel
 wheelSubtractionHoleNumber = 5; //7 holes will overlap each other
 //could find cirumference of circle at translation point and verify that total diameter of holes does not exceed that, plus fudge since straight line vs circle... worth it?? prob not
 
-//webbing retainer clips on hub info
-webbingClipNumber = 2;
-webbingClipWidth = 5;
-webbingClipDepth = 3;
+
 
 //snapfit info
 snapFitJointVerticalGap = 0.5; //how much void vertically on bottom and top between peg and spool wheel hub receiver
@@ -80,13 +117,13 @@ snapFitSquaring = 0.1*snapFitJointHeight/2;
 //snapFitSphereJointWallOutsideGap = 1; //between snap fit receiver and outer cylinder, to allow for some flex inside spool central cylinder XX
 
 //FYI
-//webbingWidth = 25.25; //actual 25.25
+//Webbing_Width = 25.25; //actual 25.25
 //hubInnerInnerDiameter = 24; //this could be changed. arbitrary
 
 //snapFitJointVerticalGap = 1;
 //snapFitPegJointSeperation = 8; //distance on peg between two toruses
 //snapFitPegJoinHeight = 4;
-//snapFitJointHeight = (webbingWidth - snapFitPegJointSeperation - (2*snapFitJointVerticalGap))/2;
+//snapFitJointHeight = (Webbing_Width - snapFitPegJointSeperation - (2*snapFitJointVerticalGap))/2;
 //echo("Snap Fit JointHeight = ", snapFitJointHeight);
 //snapFitJointHeight
 
@@ -117,8 +154,8 @@ snapFitSquaring = 0.1*snapFitJointHeight/2;
 //clipPerfRotation = 360/clipPerfNumber;
 
 //calculated spool info
-WebbingNumberTurns = (webbingThickness - hubOuterOuterDiameter + sqrt(pow(hubOuterOuterDiameter - webbingThickness,2)+((4 * webbingThickness * webbingLength)/PI)))/(2 * webbingThickness);
-webbingSpooledDiameter = (2 * WebbingNumberTurns * webbingThickness) + hubOuterOuterDiameter;
+WebbingNumberTurns = (Webbing_Thickness - hubOuterOuterDiameter + sqrt(pow(hubOuterOuterDiameter - Webbing_Thickness,2)+((4 * Webbing_Thickness * webbingLength)/PI)))/(2 * Webbing_Thickness);
+webbingSpooledDiameter = (2 * WebbingNumberTurns * Webbing_Thickness) + hubOuterOuterDiameter;
 SpoolOuterDiameter = webbingSpooledDiameter + (2 * spoolOuterRadiusPadding);
 echo("Spool diameter = ", SpoolOuterDiameter);
 
@@ -234,7 +271,7 @@ module wheelBase(clipHoleBool, retainerClipsBool) {
         union(){
             //wheel
             //large spool wheel
-            cylinder(wheelHeight, SpoolOuterDiameter/2, SpoolOuterDiameter/2, false, $fn = currentFacets);
+            cylinder(wheelHeight, SpoolOuterDiameter/2, SpoolOuterDiameter/2, false, $fn = Current_Facets);
                 
             if (clipHoleBool) {
                 //clip hole bump out
@@ -253,28 +290,28 @@ module wheelBase(clipHoleBool, retainerClipsBool) {
             translate([clipRoundingHoleCenterTranslation, clipRoundingHoleCenterTranslation, 0]){
                 difference(){
                     cube([clipRoundingHoleDiameter/2, clipRoundingHoleDiameter/2, wheelHeight], false);  
-                    cylinder(wheelHeight, clipRoundingHoleDiameter/2, clipRoundingHoleDiameter/2, false, $fn = currentFacets);
+                    cylinder(wheelHeight, clipRoundingHoleDiameter/2, clipRoundingHoleDiameter/2, false, $fn = Current_Facets);
                 }
             }
             
             //check that clip isn't messed up in a few ways
-            if( (clipRoundingHoleDiameter/2) > (carabinerHoleDiameter/2 + carabinerHoleDistanceEdgeThreshold) ){
+            if( (clipRoundingHoleDiameter/2) > (Carabiner_Hole_Diameter/2 + Carabiner_Hole_Edge_Threshold_Distance) ){
                 echo("Clip hole Diameter OK");
                 clipHoleCenterTranslation = clipRoundingHoleCenterTranslation;
                 //make hole in clip hole bump out
                 translate([clipHoleCenterTranslation, clipHoleCenterTranslation, 0]){
-                    cylinder(wheelHeight, carabinerHoleDiameter/2, carabinerHoleDiameter/2, false, $fn = currentFacets);
+                    cylinder(wheelHeight, Carabiner_Hole_Diameter/2, Carabiner_Hole_Diameter/2, false, $fn = Current_Facets);
                 }
             }
             else
             {
                 echo("Clip hole Diameter NOT OK");
-                echo("Clip hole was", (clipRoundingHoleDiameter/2) - (carabinerHoleDiameter/2)," away from edge");
-                clipHoleCenterTranslation = clipRoundingHoleCenterTranslation - (carabinerHoleDistanceEdgeThreshold - ((clipRoundingHoleDiameter/2) - (carabinerHoleDiameter/2)));
+                echo("Clip hole was", (clipRoundingHoleDiameter/2) - (Carabiner_Hole_Diameter/2)," away from edge");
+                clipHoleCenterTranslation = clipRoundingHoleCenterTranslation - (Carabiner_Hole_Edge_Threshold_Distance - ((clipRoundingHoleDiameter/2) - (Carabiner_Hole_Diameter/2)));
                 echo("Clip hole translation now = ", clipHoleCenterTranslation);
                 //make hole in clip hole bump out
                 translate([clipHoleCenterTranslation, clipHoleCenterTranslation, 0]){
-                    cylinder(wheelHeight, carabinerHoleDiameter/2, carabinerHoleDiameter/2, false, $fn = currentFacets);
+                    cylinder(wheelHeight, Carabiner_Hole_Diameter/2, Carabiner_Hole_Diameter/2, false, $fn = Current_Facets);
                 }
             }
         } //end if clipHoleBool
@@ -283,7 +320,7 @@ module wheelBase(clipHoleBool, retainerClipsBool) {
         for (i = [0:wheelSubtractionHoleNumber-1]) {
             rotate([0,0,wheelSubtractionHoleRotation * i]){
                 translate([wheelSubtractionHoleTranslation,0,0]){
-                    cylinder(2*wheelHeight, wheelSubtractionHoleRadius, wheelSubtractionHoleRadius, false, $fn = currentFacets);
+                    cylinder(2*wheelHeight, wheelSubtractionHoleRadius, wheelSubtractionHoleRadius, false, $fn = Current_Facets);
                 }
             }
         } //end for
@@ -299,11 +336,12 @@ module wheelBase(clipHoleBool, retainerClipsBool) {
 // retainer clips - to hold webbing against central cylinder
 module retainerClips() {
     //TODO move clips closer
+    //TODO check that fewer clips than holes in spool wheel? Or does the math work that thye will just be placed upon the others?
     //webbing clips
-    for (i = [0:webbingClipNumber-1]) {
+    for (i = [0:Webbing_Clip_Number-1]) {
         rotate([0,0,wheelSubtractionHoleRotation * i
         + 6]){
-            translate([-1 * (hubOuterOuterRadius + webbingThickness - webbingThicknessClipAdjustment) - webbingClipDepth, 0, 0]) {
+            translate([-1 * (hubOuterOuterRadius + Webbing_Thickness - Webbing_Thickness_Padding_For_Clips) - webbingClipDepth, 0, 0]) {
                 difference(){
                     union(){
                         cube([webbingClipDepth,webbingClipWidth,(0.95*spoolGapWidth) + wheelHeight],false);
@@ -385,6 +423,8 @@ module retainerClips() {
         } //end rotate (of clip(s) around central hub)
     } //end for
 }
+//whitespace at end of retainerClips
+
 
 //
 //
@@ -393,11 +433,12 @@ module hubBottom() {
     
     difference() {
         //outer spool
-        cylinder(spoolGapWidth + wheelHeight, hubOuterOuterRadius, hubOuterOuterRadius, false, $fn = currentFacets);
+        cylinder(spoolGapWidth + wheelHeight, hubOuterOuterRadius, hubOuterOuterRadius, false, $fn = Current_Facets);
         
         //larger hub void
+        //TODO use if/else to always make this inner wall of the outer hub at least... 45 facets on cylinder so that it spins smoothly? (e.g. even if the rest of the spool is at 18 facets)
         translate([0,0,wheelHeight + (spoolGapWidth * 0.45)]){
-            cylinder((spoolGapWidth * 0.55), hubOuterInnerRadius, hubOuterInnerRadius, false, $fn = currentFacets); 
+            cylinder((spoolGapWidth * 0.55), hubOuterInnerRadius, hubOuterInnerRadius, false, $fn = Current_Facets); 
         }
         
         //snap fit torus
@@ -443,7 +484,8 @@ module hubBottom() {
 module hubTop() {
     difference() {
         //inner spool, outer wall
-        cylinder( (spoolGapWidth * 0.45) + wheelHeight, hubInnerOuterRadius, hubInnerOuterRadius, false, $fn = currentFacets); //double up wheelheight to mate wheels evenly
+        //TODO use if/else to always make this outer wall of the inner hub at least... 45 facets on cylinder so that it spins smoothly? (e.g. even if the rest of the spool is at 18 facets)
+        cylinder( (spoolGapWidth * 0.45) + wheelHeight, hubInnerOuterRadius, hubInnerOuterRadius, false, $fn = Current_Facets); //double up wheelheight to mate wheels evenly
         
         //snap fit torus
         translate([0,0,wheelHeight+snapFitJointHeight/2+snapFitJointVerticalGap]){
@@ -532,7 +574,7 @@ translate([0,200,0]){
         for (i = [0:wheelSubtractionHoleNumber-1]) {
             rotate([0,0,wheelSubtractionHoleRotation * i]){
                 translate([wheelSubtractionHoleTranslation,0,0]){
-                    cylinder(wheelHeight*wheelClipWheelDepthFactor, wheelSubtractionHoleRadius-webbingClipWheelOffset, wheelSubtractionHoleRadius-webbingClipWheelOffset, false, $fn = currentFacets);
+                    cylinder(wheelHeight*wheelClipWheelDepthFactor, wheelSubtractionHoleRadius-webbingClipWheelOffset, wheelSubtractionHoleRadius-webbingClipWheelOffset, false, $fn = Current_Facets);
                 }
             }
         }
@@ -578,40 +620,28 @@ translate([0,200,0]){
     }
 }  
 }
-//whitespace
-
+//whitespace at end of wheelClip
 
 //wheelClip();
 
 
-
-//todo rotate to lie flat?
-//todo remove translation of peg
-//rotate([0,90,0])snapFitPeg();
-//snapFitPeg();
-
-bottomBool = false;
-pegBool = false;
-
-if (pegBool) {
+//
+//actually use modules and make objects here
+//
+if (Output_Object == "Peg") {
     rotate([0,90,0]) {
         snapFitPeg();
     }
 }
-else
-{
-
-    if (bottomBool) {
-        union() {
-            wheelBase(false, true);
-            hubBottom();
-        }
+else if (Output_Object == "Bottom") {
+    union() {
+        wheelBase(false, true);
+        hubBottom();
     }
-    else
-    {
-        union() {
-            wheelBase(true, false);
-            hubTop();
-        }
-    } //end if bottomBool
-} //end if pegBool
+}
+else if (Output_Object == "Top") {
+    union() {
+        wheelBase(true, false);
+        hubTop();
+    }
+} //end if Top
